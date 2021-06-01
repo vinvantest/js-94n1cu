@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Web App: Cloud Image Store</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Goto : https://favicon.io/favicon-generator/ -->
+    <link rel="apple-touch-icon" sizes="180x180" href="../images/favicon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="../images/favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="../images/favicon/favicon-16x16.png">
+
+    <meta name="keywords" content="digital, ecommerce">
+    <meta property="og:description" content="Cloud image storage, most versatile and flexible.">
+    <meta property="og:title" content="Cloud Image">
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+        integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <!-- <link rel="stylesheet" type="text/css" href="vendor/bootstrap/css/bootstrap.min.css"> -->
+    <!-- <link rel="stylesheet" type="text/css" href="fonts/font-awesome-4.7.0/css/font-awesome.min.css"> -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <!-- <script src="https://use.fontawesome.com/8eb3b2177c.js"></script> -->
+
+    <!-- Insert these scripts at the bottom of the HTML, but before you use any 
+        Firebase services 
+    <script src="https://www.gstatic.com/firebasejs/7.16.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/7.16.0/firebase-analytics.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/7.16.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/7.16.0/firebase-firestore.js"></script>
+    -->
+
+    <script src="https://www.gstatic.com/firebasejs/8.4.2/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.4.2/firebase-analytics.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.4.2/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.4.2/firebase-firestore.js"></script>
+
+    <script type="text/javascript" src="../js/cloudimage.js"></script>
+    <link rel="stylesheet" type="text/css" href="../css/main_style.css">
+
+    <script src="https://www.google.com/recaptcha/api.js?render=6LdZzrMaAAAAAHNNPjjU142Pr_4fxnv-EVA771R0"></script>
+    <!-- <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script> -->
+    <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@sweetalert2/themes@4.0.5/bootstrap-4/bootstrap-4.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10.16.6/dist/sweetalert2.all.min.js"></script>
+
+    <script type="text/javascript">
+        // var prdCnt;
+        // var planDesc;
+        // var prodLimit;
+        // var status;
+        // var terms;
+        function checkAuthState() {
+            firebase.auth().onAuthStateChanged((user) => {
+                if (user) {
+                    // User is signed in.
+                    var displayName = user.displayName;
+                    var email = user.email;
+                    var emailVerified = user.emailVerified;
+                    var photoURL = user.photoURL;
+                    var isAnonymous = user.isAnonymous;
+                    var uid = user.uid;
+                    var providerData = user.providerData;
+                    // console.log("printing User ->");
+                    // console.log(displayName);
+                    // console.log(uid);
+                    // console.log(email);
+                    // console.log(photoURL);
+                    if (photoURL === null || photoURL === undefined || photoURL === "null") {
+                    }
+                    else {
+                        document.getElementById('avatar-img').src = photoURL;
+                    }
+                    document.getElementById('global-loader').classList.remove('is-active');
+
+                }
+            });
+        }
+        
+        async function feedbackFunction() {
+            /* inputOptions can be an object or Promise */
+            const inputOptions = new Promise((resolve) => {
+                setTimeout(() => {
+                    resolve({
+                        1: 'Very Happy',
+                        2: 'Satisfied',
+                        3: 'Not Happy'
+                    })
+                }, 1000)
+            })
+
+            const { value: choice } = await Swal.fire({
+                title: 'With the use of Cloud Image, I am ...',
+                input: 'radio',
+                position: 'top-end',
+                inputOptions: inputOptions,
+                inputValidator: (value) => {
+                    if (!value) {
+                        return 'You need to choose something!'
+                    }
+                }
+            })
+
+            if (parseInt(choice) === 3) {
+                // console.log('3: choice =' + typeof choice + '  value =' + choice);
+                // Swal.fire({ html: `You selected: ${choice}` }); // shows html and ok btn
+                Swal.fire({
+                    title: 'Feeback',
+                    position: 'top-end',
+                    html: `We constantly thrive to improve and provide the best experience for you. Your feedback is valuable to us. 
+                            Let us know your feedback or suggestions to improve.`,
+                    input: 'textarea',
+                    inputPlaceholder: 'Type your message here...',
+                    inputAttributes: { autocapitalize: 'off' },
+                    showCancelButton: true,
+                    confirmButtonText: 'Send Feedback',
+                    confirmButtonColor: '#720fa3',
+                    showLoaderOnConfirm: true,
+                    preConfirm: (feedback) => {
+                        return firebase.auth().currentUser.getIdToken(/* forceRefresh */ true).then(async function (idToken) {
+                            return fetch(
+                                calls.fdbbck
+                                , {
+                                    method: 'post',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'authorization': 'Bearer ' + idToken
+                                    },
+                                    body: JSON.stringify({
+                                        'email': firebase.auth().currentUser.email ? firebase.auth().currentUser.email : 'none@none.com',
+                                        'feedback': feedback ? feedback : 'none',
+                                        'user': firebase.auth().currentUser.displayName,
+                                        'guid': firebase.auth().currentUser.uid,
+                                        'photoURL': firebase.auth().currentUser.photoURL,
+                                        'type': 3, // not_happy
+                                    }),
+                                })
+                                .then(response => {
+                                    if (!response.ok) {
+                                        throw new Error(response.statusText)
+                                    }
+                                    return response.json()
+                                })
+                                .catch(error => {
+                                    Swal.showValidationMessage(`Request failed: ${error}`)
+                                });
+                        });
+
+                    },
+                    allowOutsideClick: () => !Swal.isLoading()
+                }).then((result) => {
+                    if (result.value) {
+                        Swal.fire({
+                            icon: 'info',
+                            backdrop: true,
+                            title: `Feedback Sent. Thank you!`,
+                            showCancelButton: false,
+                            confirmButtonColor: '#720fa3',
+                        });
+                    }
+                });
+            }
+            else if (parseInt(choice) === 2) {
+                // console.log('2: choice =' + typeof choice + '  value =' + choice);
+                Swal.fire({
+                    title: 'Feeback',
+                    position: 'top-end',
+                    html: `Glad that you are satisfied with our product and service. We constantly thrive to improve and provide the best 
+                            experience for you. How can we improve to make you very happy?`,
+                    input: 'textarea',
+                    inputPlaceholder: 'Type your message here...',
+                    inputAttributes: { autocapitalize: 'off' },
+                    showCancelButton: true,
+                    confirmButtonText: 'Send Feedback',
+                    confirmButtonColor: '#720fa3',
+                    showLoaderOnConfirm: true,
+                    preConfirm: (feedback) => {
+                        return firebase.auth().currentUser.getIdToken(/* forceRefresh */ true).then(async function (idToken) {
+                            return fetch(
+                                calls.fdbbck
+                                , {
+                                    method: 'post',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'authorization': 'Bearer ' + idToken
+                                    },
+                                    body: JSON.stringify({
+                                        'email': firebase.auth().currentUser.email ? firebase.auth().currentUser.email : 'none@none.com',
+                                        'feedback': feedback ? feedback : 'none',
+                                        'user': firebase.auth().currentUser.displayName,
+                                        'guid': firebase.auth().currentUser.uid,
+                                        'photoURL': firebase.auth().currentUser.photoURL,
+                                        'type': 2, // satisfied
+                                    }),
+                                })
+                                .then(response => {
+                                    if (!response.ok) {
+                                        throw new Error(response.statusText)
+                                    }
+                                    return response.json()
+                                })
+                                .catch(error => {
+                                    Swal.showValidationMessage(`Request failed: ${error}`)
+                                });
+                        });
+
+                    },
+                    allowOutsideClick: () => !Swal.isLoading()
+                }).then((result) => {
+                    if (result.value) {
+                        Swal.fire({
+                            icon: 'info',
+                            backdrop: true,
+                            title: `Feedback Sent. Thank you!`,
+                            showCancelButton: false,
+                            confirmButtonColor: '#720fa3',
+                        });
+                    }
+                });
+            }
+            else {
+                // console.log('1: choice =' + typeof choice + '  value =' + choice);
+                Swal.fire({
+                    title: 'Feeback',
+                    position: 'top-end',
+                    html: `We love to hear that Spin 360 is genuinely making a difference to your business. 
+                            Let us know your feedback and we can celebrate it, be motivated and continue to provide the best experience.`,
+                    input: 'textarea',
+                    inputPlaceholder: 'Type your message here...',
+                    inputAttributes: { autocapitalize: 'off' },
+                    showCancelButton: true,
+                    confirmButtonText: 'Send Feedback',
+                    confirmButtonColor: '#720fa3',
+                    showLoaderOnConfirm: true,
+                    preConfirm: (feedback) => {
+                        return firebase.auth().currentUser.getIdToken(/* forceRefresh */ true).then(async function (idToken) {
+                            return fetch(
+                                calls.fdbbck
+                                , {
+                                    method: 'post',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'authorization': 'Bearer ' + idToken
+                                    },
+                                    body: JSON.stringify({
+                                        'email': firebase.auth().currentUser.email ? firebase.auth().currentUser.email : 'none@none.com',
+                                        'feedback': feedback ? feedback : 'none',
+                                        'user': firebase.auth().currentUser.displayName,
+                                        'guid': firebase.auth().currentUser.uid,
+                                        'photoURL': firebase.auth().currentUser.photoURL,
+                                        'type': 1, // very_happy
+                                    }),
+                                })
+                                .then(response => {
+                                    if (!response.ok) {
+                                        throw new Error(response.statusText)
+                                    }
+                                    return response.json()
+                                })
+                                .catch(error => {
+                                    Swal.showValidationMessage(`Request failed: ${error}`)
+                                });
+                        });
+                    },
+                    allowOutsideClick: () => !Swal.isLoading()
+                }).then((result) => {
+                    if (result.value) {
+                        Swal.fire({
+                            icon: 'info',
+                            backdrop: true,
+                            title: `Feedback Sent. Thank you!`,
+                            showCancelButton: false,
+                            confirmButtonColor: '#720fa3',
+                        });
+                    }
+                });
+            }
+        }
+
+        function initAppCheck() {
+            // Initialize Firebase
+            firebase.initializeApp(firebaseConfig);
+            firebase.analytics();
+            // document.querySelector('#price-change-form').classList.add('hidden');
+            document.getElementById('global-loader').classList.add('is-active');
+            document.getElementById('manage-btn').addEventListener('click', manageClick, false);
+            document.getElementById('products-btn').addEventListener('click', productsClick, false);
+            document.getElementById('upload-btn').addEventListener('click', uploadClick, false);
+            document.getElementById("button-feedback").addEventListener('click', feedbackFunction, false);
+
+            // document.getElementById('profile-btn').addEventListener('click', showProfile, false);
+            // URL - prdCnt=' + pc + '&plan=' + nickname + '&limit=' + limit
+            // const params = new URLSearchParams(document.location.search.substring(1));
+            // prdCnt = params.get('prdCnt');
+            // planDesc = params.get('plan');
+            // prodLimit = params.get('limit');
+            // status = params.get('status');
+            // terms = params.get('terms');
+            // console.log('prodCnt = ' + prdCnt);
+            // console.log('planDesc = ' + planDesc);
+            // console.log('prodLimit = ' + prodLimit);
+        }
+        function manageClick() { window.location = '../pages/payment.html'; }
+        function productsClick() { window.location = '../pages/products.html'; }
+        function uploadClick() {
+            if (firebase.auth().currentUser) {
+                // document.getElementById('check-manage-url').innerHTML = 'Checking Subscription URL ...';
+                document.getElementById('global-loader').classList.add('is-active');
+                firebase.auth().currentUser.getIdToken(/* forceRefresh */ true).then(async function (idToken) {
+                    // get link from DB
+                    // checkUploadLimit -- TODO 30-Apr
+                    fetch(
+                        calls.chkLimit, {
+                        method: 'post',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'authorization': 'Bearer ' + idToken
+                        },
+                        body: JSON.stringify({
+                            guid: firebase.auth().currentUser.uid
+                        }),
+                    })
+                        .then((response) => {
+                            return response.json();
+                        })
+                        .then((result) => {
+                            // console.log('upload Limit ->' + JSON.stringify(result));
+                            document.getElementById('global-loader').classList.remove('is-active');
+                            if (result.allowed)
+                                window.location = '../pages/upload.html';
+                            else {
+                                Swal.fire({
+                                    title: 'Product Limit Reached',
+                                    text: 'You have reached the limit of products allowed in your subscription. Visit manage subscription and upgrad.',
+                                    type: "error",
+                                    confirmButtonText: "Ok",
+                                    confirmButtonColor: '#720fa3',
+                                    allowOutsideClick: () => !Swal.isLoading()
+                                }).then((result) => {
+                                });
+                            }
+                        });
+                });
+            } else {
+                Swal.fire({
+                    title: 'You are not logged in',
+                    type: "error",
+                    confirmButtonText: "Ok",
+                    confirmButtonColor: '#720fa3',
+                    allowOutsideClick: () => !Swal.isLoading()
+                }).then((result) => {
+                    firebase.auth().signOut();
+                    window.location = '../index.html';
+                });
+            }
+
+        }
+        function logoutClick() {
+            if (!firebase.auth().currentUser) {
+                // window.location = '/index.html';
+            } else {
+                firebase.auth().signOut().then(result => {
+                    let timerInterval;
+                    Swal.fire({
+                        title: 'You have been successfully signed out',
+                        icon: "info",
+                        confirmButtonText: "Ok",
+                        confirmButtonColor: '#720fa3',
+                        timer: 1000,
+                        onClose: () => {
+                            clearInterval(timerInterval);
+                            window.location = '../index.html';
+                        },
+                        preConfirm: () => {
+                            return window.location = '../index.html';
+                        },
+                    }).then((result) => {
+                    });
+                });
+            }
+        }
+
+        window.onload = function () {
+            initAppCheck();
+            checkAuthState();
+        };
+    </script>
+
+</head>
+
+<body>
+    <div id="global-loader" class="loader loader-default"></div>
+    <a class="feedbackfloat" id="button-feedback"></a>
+
+    <div>
+        <div class="landing-action-btn" style="padding-bottom: 30px; padding-top: 30px;">
+            <button class="avatar-btn" id="signout" onclick="logoutClick()">
+                <img src="../images/icons/avatar.png" class="avatar" id="avatar-img">Signout
+            </button>
+        </div>
+    </div>
+
+    <div class="container-login100" style="background-image: url('../images/background/bg-03.jpeg');">
+
+        <div class="login-wrapper"
+            style="padding-left: 55px; padding-right: 55px; padding-top: 80px; padding-bottom: 30px;">
+            <div class="login100-form">
+                <div class="container-landing100-form-btn">
+                    <div class="text-center" style="padding-bottom: 40px; padding-top: 30px;">
+                        <img src="../images/icons/subscription.png" width="100px" height="90px" />
+                    </div>
+
+                    <div class="landing-action-btn">
+                        <button class="managesub100-form-btn" id="manage-btn">
+                            Manage Subscription
+                        </button>
+                    </div>
+                    <div class="text-center p-t-57 p-b-20" style="padding-bottom: 20px; padding-top: 57px;">
+                        <span class="txt1" id="check-manage-url">
+                            Change plan, Update Payment, Cancel subscription.
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="login-wrapper"
+            style="padding-left: 55px; padding-right: 55px; padding-top: 80px; padding-bottom: 30px;">
+            <div class="login100-form">
+                <div class="container-landing100-form-btn">
+                    <div class="text-center" style="padding-bottom: 40px; padding-top: 30px;">
+                        <img src="../images/icons/upload.png" width="100px" height="90px" />
+                    </div>
+
+                    <div class="landing-action-btn">
+                        <button class="addprod100-form-btn" id="upload-btn">
+                            Add Product
+                        </button>
+                    </div>
+                    <div class="text-center" style="padding-bottom: 20px; padding-top: 57px;">
+                        <span class="txt1">
+                            Upload photos for merchandising and viewing.
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="login-wrapper"
+            style="padding-left: 55px; padding-right: 55px; padding-top: 80px; padding-bottom: 30px;">
+            <div class="login100-form">
+                <div class="container-landing100-form-btn">
+                    <div class="text-center" style="padding-bottom: 40px; padding-top: 30px;">
+                        <img src="../images/icons/products.png" width="100px" height="90px" />
+                    </div>
+
+                    <div class="landing-action-btn">
+                        <button class="viewprod100-form-btn" id="products-btn">
+                            View Products
+                        </button>
+                    </div>
+                    <div class="text-center" style="padding-bottom: 20px; padding-top: 57px;">
+                        <span class="txt1">
+                            View your images and get the links to images for offline viewing.
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+        integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+        crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+        integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+        crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+        integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+        crossorigin="anonymous"></script>
+
+
+</body>
+
+</html>

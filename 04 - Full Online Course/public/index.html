@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Web App: Cloud Image Store</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Goto : https://favicon.io/favicon-generator/ -->
+    <link rel="apple-touch-icon" sizes="180x180" href="./images/favicon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="./images/favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="./images/favicon/favicon-16x16.png">
+
+    <meta name="keywords" content="digital, ecommerce">
+    <meta property="og:description" content="Cloud image storage, most versatile and flexible.">
+    <meta property="og:title" content="Cloud Image">
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <!-- <link rel="stylesheet" type="text/css" href="vendor/bootstrap/css/bootstrap.min.css"> -->
+    <!-- <link rel="stylesheet" type="text/css" href="fonts/font-awesome-4.7.0/css/font-awesome.min.css"> -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <!-- <script src="https://use.fontawesome.com/8eb3b2177c.js"></script> -->
+    
+    <!-- Insert these scripts at the bottom of the HTML, but before you use any 
+        Firebase services 
+    <script src="https://www.gstatic.com/firebasejs/7.16.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/7.16.0/firebase-analytics.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/7.16.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/7.16.0/firebase-firestore.js"></script>
+    -->
+
+    <script src="https://www.gstatic.com/firebasejs/8.4.2/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.4.2/firebase-analytics.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.4.2/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.4.2/firebase-firestore.js"></script>
+
+    <script type="text/javascript" src="./js/cloudimage.js"></script>
+    <link rel="stylesheet" type="text/css" href="css/main_style.css">
+
+    <script src="https://www.google.com/recaptcha/api.js?render=6LdZzrMaAAAAAHNNPjjU142Pr_4fxnv-EVA771R0"></script>
+    <!-- <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script> -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@sweetalert2/themes@4.0.5/bootstrap-4/bootstrap-4.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10.16.6/dist/sweetalert2.all.min.js"></script>
+
+    <!-- END Add Firebase products that you want to use -->
+    <script type="text/javascript">
+        /**
+         * Function called when clicking the Login/Logout button.
+         */
+        function toggleGoogleSignIn(e) {
+            e.preventDefault();
+            document.getElementById('global-loader').classList.add('is-active');
+            grecaptcha.ready(function () {
+                grecaptcha.execute(recaptchaPubKey, { action: 'submit' }).then(function (token) {
+                    fetch(                   
+                        calls.recaptcha
+                        , {
+                            method: 'post',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                response: token
+                            }),
+                        })
+                        .then((response) => {
+                            return response.json();
+                        })
+                        .then((result) => {
+                            console.log(result);
+                            if (result.success !== null || result.success !== undefined || result.score !== null || result.score !== undefined) {
+                                if (result.success) {
+                                    if (!firebase.auth().currentUser) {
+                                        var provider = new firebase.auth.GoogleAuthProvider();
+                                        provider.addScope('https://www.googleapis.com/auth/plus.login');
+                                        document.getElementById('global-loader').classList.add('is-active');
+                                        firebase.auth().signInWithRedirect(provider);
+                                    } else {
+                                        firebase.auth().signOut();
+                                        document.getElementById('google-sign-in').disabled = false;
+                                        document.getElementById("google-sign-in").style.display = "flex";
+                                    }
+                                    document.getElementById('google-sign-in').disabled = true;
+                                }
+                                else {
+                                    document.getElementById('global-loader').classList.remove('is-active');
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Oops...',
+                                        text: 'Security recaptcha challenge failed!',
+                                        footer: '<a href="../pages/help.html">Why do I have this issue?</a>'
+                                    });
+                                }
+                            }
+                            else {
+                                document.getElementById('global-loader').classList.remove('is-active');
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Oops...',
+                                    text: 'Security recaptcha failed!',
+                                    footer: '<a href="../pages/help.html">Why do I have this issue?</a>'
+                                });
+                            }
+                        }).catch(error => {
+                            document.getElementById('global-loader').classList.remove('is-active');
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Oops...',
+                                text: 'Something went wrong!',
+                                footer: '<a href="../pages/help.html">Why do I have this issue?</a>'
+                            });
+                        });
+
+
+                });
+            });
+        }
+
+        /**
+         * initApp handles setting up UI event listeners and registering Firebase auth listeners:
+         *  - firebase.auth().onAuthStateChanged: This listener is called when the user is signed in or
+         *    out, and that is where we update the UI. Updated.
+         *  - firebase.auth().getRedirectResult(): This promise completes when the user gets back from
+         *    the auth redirect flow. It is where you can get the OAuth access token from the IDP.
+         */
+        function initApp() {
+            // Initialize Firebase
+            firebase.initializeApp(firebaseConfig);
+            firebase.analytics();
+
+            // Result from Redirect auth flow.
+            firebase.auth().getRedirectResult().then(function (result) {
+                if (result.credential) {                    
+                    var token = result.credential.accessToken;
+                    console.log(`View token : ${token}`);
+                }            
+            }).catch(function (error) {
+                // Handle Errors here.
+                var errorCode = error.code;
+                var errorMessage = error.message;
+                var email = error.email;
+                var credential = error.credential;
+                if (errorCode === 'auth/account-exists-with-different-credential') {
+                    alert('You have already signed up with a different auth provider for that email.');
+                } else {
+                    console.log(error);
+                }
+            });
+            firebase.auth().onAuthStateChanged(function (user) {
+                if (user) {
+                    // User is signed in.
+                    var displayName = user.displayName;
+                    var email = user.email;
+                    var emailVerified = user.emailVerified;
+                    var photoURL = user.photoURL;
+                    var isAnonymous = user.isAnonymous;
+                    var uid = user.uid;
+                    var providerData = user.providerData;
+                    document.getElementById('global-loader').classList.remove('is-active');
+                    window.location = './pages/determine.html';
+                } else {
+                    // User is signed out.
+                }
+            });
+            
+            // Add click event
+            document.getElementById('google-sign-in').addEventListener('click', toggleGoogleSignIn, false);
+        }
+
+        window.onload = function () {
+            initApp();
+        };
+
+    </script>
+</head>
+
+<body>
+    <div id="global-loader" class="loader loader-default"></div>
+
+    <div class="container-login100" style="background-image: url('images/background/bg-03.jpeg');">
+        <div class="login-wrapper" 
+             style="padding-left: 55px; padding-right: 55px; padding-top: 80px; padding-bottom: 30px;">
+            <div class="login100-form">
+
+                <div class="logo-image">
+                    <img src="./images/favicon/android-chrome-512x512.png" 
+                      width="200px" height="200px" />
+                </div>
+
+                <div class="flex-c" style="padding-top: 30px; padding-bottom: 30px;">
+                    <a href="#" class="login-social-icon-btn" id="facebook-sign-in">
+                        <i class="fa fa-facebook-f"></i>
+                    </a>
+                    &nbsp;&nbsp;&nbsp;
+                    <a href="#" class="login-social-icon-btn" id="google-sign-in">
+                        <img src="images/icons/icon-google.png" alt="GOOGLE">
+                    </a>
+                </div>
+
+                <div class="logo-image">
+                    <button class="login-bottom-txt">
+                        Sign In with Social Accounts
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+
+<!-- 
+Curious which components explicitly require jQuery, our JS, and Popper.js? Click the show components link below. If you’re at all unsure about the general page structure, keep reading for an example page template.
+
+Show components requiring JavaScript
+* Alerts for dismissing
+* Buttons for toggling states and checkbox/radio functionality
+* Carousel for all slide behaviors, controls, and indicators
+* Collapse for toggling visibility of content
+* Dropdowns for displaying and positioning (also requires Popper.js)
+* Modals for displaying, positioning, and scroll behavior
+* Navbar for extending our Collapse plugin to implement responsive behavior
+* Tooltips and popovers for displaying and positioning (also requires Popper.js)
+* Scrollspy for scroll behavior and navigation updates -->
+
+</body>
+
+</html>

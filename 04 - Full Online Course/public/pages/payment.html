@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Web App: Cloud Image Store</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Goto : https://favicon.io/favicon-generator/ -->
+    <link rel="apple-touch-icon" sizes="180x180" href="../images/favicon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="../images/favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="../images/favicon/favicon-16x16.png">
+
+    <meta name="keywords" content="digital, ecommerce">
+    <meta property="og:description" content="Cloud image storage, most versatile and flexible.">
+    <meta property="og:title" content="Cloud Image">
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+        integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+    <script src="https://www.gstatic.com/firebasejs/8.4.2/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.4.2/firebase-analytics.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.4.2/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.4.2/firebase-firestore.js"></script>
+
+    <script type="text/javascript" src="../js/cloudimage.js"></script>
+    <link rel="stylesheet" type="text/css" href="../css/main_style.css">
+
+    <script src="https://www.google.com/recaptcha/api.js?render=6LdZzrMaAAAAAHNNPjjU142Pr_4fxnv-EVA771R0"></script>
+    <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@sweetalert2/themes@4.0.5/bootstrap-4/bootstrap-4.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10.16.6/dist/sweetalert2.all.min.js"></script>
+
+
+    <script type="text/javascript">
+
+        function checkAuthState() {
+            // Listening for auth state changes.
+            firebase.auth().onAuthStateChanged((user) => {
+                if (user) {
+                    // User is signed in.
+                    var displayName = user.displayName;
+                    var email = user.email;
+                    var emailVerified = user.emailVerified;
+                    var photoURL = user.photoURL;
+                    var isAnonymous = user.isAnonymous;
+                    var uid = user.uid;
+                    var providerData = user.providerData;
+                    // console.log("printing User ->");
+                    // console.log(displayName);
+                    // console.log(uid);
+                    // console.log(email);
+                    // console.log(photoURL);
+                    if (photoURL === null || photoURL === undefined || photoURL === "null") {
+                    }
+                    else {
+                        document.getElementById('avatar-img').src = photoURL;
+                    }
+                }
+            });
+            // [END authstatelistener]
+        }
+
+        function initAppCheck() {
+            // Initialize Firebase
+            firebase.initializeApp(firebaseConfig);
+            firebase.analytics();
+            document.getElementById('go-home').addEventListener('click', homeClick, false);
+            document.getElementById('go-subscribe').addEventListener('click', subscribeClick, false);
+        }
+
+        function homeClick() {
+            window.location = '../pages/landing.html';
+        }
+
+        function subscribeClick() {
+            window.location = '../pages/subscribe.html';
+        }
+
+        window.onload = function () {
+            initAppCheck();
+            checkAuthState();
+        };
+
+    </script>
+
+</head>
+
+<body>
+
+    <div id="global-loader" class="loader loader-default"></div>
+    <div>
+        <div class="landing-action-btn" style="padding-bottom: 30px; padding-top: 30px;">
+            <button class="avatar-btn" id="go-home">
+                <img src="../images/icons/avatar.png" class="avatar" id="avatar-img">Home
+            </button>
+        </div>
+    </div>
+
+    <div class="container-login100" style="background-image: url('../images/background/bg-03.jpeg');">
+        <div class="login-wrapper"
+            style="padding-left: 55px; padding-right: 55px; padding-top: 40px; padding-bottom: 30px;">
+
+            <div style="margin: auto; display: table;">
+                <img src="../images/icons/subscription.png" />
+            </div>
+            <div class="landing-action-btn" style="padding-bottom: 30px; padding-top: 30px;">
+                <button class="avatar-btn" id="go-subscribe">
+                    * Setup Subscription *
+                </button>
+                <span style="text-align:center; margin-top: 20px;">Or, proceed with one time payment using below
+                    form.</span>
+            </div>
+
+            <div
+                style="margin: auto; display: table; width: 112px; height: 4px; border-bottom: 1px solid black; margin-bottom: 20px;">
+            </div>
+
+            <div class="logo-image" style="margin-top: 30px;">
+                <input type="text" id="amount" placeholder="Enter Amount"
+                    onkeyup="this.value=this.value.replace(/[^0-9.]/g,'')">
+            </div>
+
+            <div class="">
+                <div id="card-element" style="background-color: transparent; color: black;"></div>
+            </div>
+
+            <div class="logo-image">
+                <button class="login-bottom-txt" id="paybtn">
+                    Pay Now
+                </button>
+            </div>
+
+            <div class="logo-image">
+                <div id="card-errors" role="alert"></div>
+            </div>
+
+
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+        integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+        crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+        integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+        crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+        integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+        crossorigin="anonymous"></script>
+    <script src="https://js.stripe.com/v3/"></script>
+
+    <script type="text/javascript">
+        /**
+         * Stripe Payment
+        */
+        const stripe = Stripe('pk_test_51IlK0WC6pAIhd7r17oXulgOJ0lsPRNT38J2FOfxFTMKg1bdfXCH6s7AZNNN6BaEwAX4luNj3EBQhEAfE3AyyqKTN00ShqCh3fj'); // Your Publishable Key
+        const elements = stripe.elements();
+
+        const card = elements.create('card', {
+            style: {
+                base: {
+                    iconColor: '#c4f0ff',
+                    color: '#000',
+                    fontWeight: '500',
+                    fontFamily: 'Roboto, Open Sans, Segoe UI, sans-serif',
+                    fontSize: '16px',
+                    fontSmoothing: 'antialiased',
+                    ':-webkit-autofill': {
+                        color: '#fce883',
+                    },
+                    '::placeholder': {
+                        color: '#87BBFD',
+                    },
+                },
+                invalid: {
+                    iconColor: '#FFC7EE',
+                    color: '#FFC7EE',
+                },
+            },
+        });
+        card.mount('#card-element');
+
+        // const form = document.querySelector('form'); paybtn
+
+        const errorEl = document.querySelector('#card-errors');
+
+        // Give our token to our form
+        const processChargeWithStripeToken = formObj => {
+            // const hiddenInput = document.createElement('input');
+            // hiddenInput.setAttribute('type', 'hidden');
+            // hiddenInput.setAttribute('name', 'stripeToken');
+            // hiddenInput.setAttribute('value', token.id);
+            // form.appendChild(hiddenInput);
+            // form.submit();
+            document.getElementById('global-loader').classList.add('is-active');
+            grecaptcha.ready(function () {
+                grecaptcha.execute(recaptchaPubKey, { action: 'submit' }).then(function (token) {
+                    fetch(
+                        calls.recaptcha
+                        , {
+                            method: 'post',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                response: token
+                            }),
+                        })
+                        .then((response) => {
+                            return response.json();
+                        })
+                        .then((result) => {
+                            console.log(result);
+                            if (result.success !== null || result.success !== undefined || result.score !== null || result.score !== undefined) {
+                                if (result.success) {
+                                    // call process payment
+                                    firebase.auth().currentUser.getIdToken(/* forceRefresh */ true).then(async function (idToken) {
+                                        fetch(
+                                            calls.charge
+                                            , {
+                                                method: 'post',
+                                                headers: {
+                                                    'Content-Type': 'application/json',
+                                                    'authorization': 'Bearer ' + idToken
+                                                },
+                                                //  name, email, amount, stripeToken, guid 
+                                                body: JSON.stringify({
+                                                    name: firebase.auth().currentUser.displayName,
+                                                    email: firebase.auth().currentUser.email,
+                                                    amount: formObj.amount,
+                                                    stripeToken: formObj.token,
+                                                    guid: firebase.auth().currentUser.uid
+                                                }),
+                                            })
+                                            .then((responseCharge) => {
+                                                return responseCharge.json();
+                                            })
+                                            .then((resultCharge) => {
+                                                console.log(resultCharge);
+                                                if (resultCharge.successFlag) {
+                                                    document.getElementById('global-loader').classList.remove('is-active');
+                                                    Swal.fire({
+                                                        icon: 'success',
+                                                        title: 'Payment processed!',
+                                                        confirmButtonText: "Ok",
+                                                        confirmButtonColor: '#720fa3',
+                                                        text: 'We have successfully processed your payment.',
+                                                        footer: '<a href="../pages/help.html">Why do I have this issue?</a>'
+                                                    }).then((result) => {
+                                                        window.location.href = '../pages/landing.html';
+                                                    });
+                                                }
+                                                else {
+                                                    document.getElementById('global-loader').classList.remove('is-active');
+                                                    if (resultCharge.errorCode === 404) {
+                                                        Swal.fire({
+                                                            icon: 'error',
+                                                            title: 'Payment Card Rejected',
+                                                            confirmButtonText: "Ok",
+                                                            confirmButtonColor: '#720fa3',
+                                                            text: resultCharge.data,
+                                                            footer: '<a href="../pages/help.html">Why do I have this issue?</a>'
+                                                        });
+                                                    }
+                                                    else {
+                                                        Swal.fire({
+                                                            icon: 'error',
+                                                            title: 'Oops...',
+                                                            confirmButtonText: "Ok",
+                                                            confirmButtonColor: '#720fa3',
+                                                            text: 'Payment processing failed! Try again later.',
+                                                            footer: '<a href="../pages/help.html">Why do I have this issue?</a>'
+                                                        });
+                                                    }
+
+                                                }
+                                            }).catch(error => {
+                                                document.getElementById('global-loader').classList.remove('is-active');
+                                                Swal.fire({
+                                                    icon: 'error',
+                                                    title: 'Oops...',
+                                                    confirmButtonText: "Ok",
+                                                    confirmButtonColor: '#720fa3',
+                                                    text: 'Something went wrong! Try again later!',
+                                                    footer: '<a href="../pages/help.html">Why do I have this issue?</a>'
+                                                });
+                                            });
+                                    });
+                                }
+                                else {
+                                    document.getElementById('global-loader').classList.remove('is-active');
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Oops...',
+                                        confirmButtonText: "Ok",
+                                        confirmButtonColor: '#720fa3',
+                                        text: 'Security recaptcha challenge failed!',
+                                        footer: '<a href="../pages/help.html">Why do I have this issue?</a>'
+                                    });
+                                }
+                            }
+                            else {
+                                document.getElementById('global-loader').classList.remove('is-active');
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Oops...',
+                                    confirmButtonText: "Ok",
+                                    confirmButtonColor: '#720fa3',
+                                    text: 'Security recaptcha failed!',
+                                    footer: '<a href="../pages/help.html">Why do I have this issue?</a>'
+                                });
+                            }
+                        }).catch(error => {
+                            document.getElementById('global-loader').classList.remove('is-active');
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Oops...',
+                                confirmButtonText: "Ok",
+                                confirmButtonColor: '#720fa3',
+                                text: 'Something went wrong!',
+                                footer: '<a href="../pages/help.html">Why do I have this issue?</a>'
+                            });
+                        });
+                });
+            });
+
+        }
+
+        const paybtn = document.getElementById('paybtn');
+        if (paybtn) {
+            // Create token from card data
+            paybtn.addEventListener('click', e => {
+                e.preventDefault();
+                document.getElementById('global-loader').classList.add('is-active');
+                const amount = document.getElementById('amount');
+                let formObj = {};
+                formObj['amount'] = amount.value;
+                stripe.createToken(card).then(res => {
+                    if (res.error) {
+                        errorEl.textContent = res.error.message;
+                        document.getElementById('global-loader').classList.remove('is-active');
+                    }
+                    else {
+                        formObj.token = res.token;
+                        processChargeWithStripeToken(formObj);
+                    }
+                }).catch(e => {
+                    document.getElementById('global-loader').classList.remove('is-active');
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'System error in payment submission!',
+                        text: 'There was a system error while processing your payment. Try again later!',
+                        confirmButtonText: "Ok",
+                        confirmButtonColor: '#720fa3',
+                    }).then((result) => {
+                    });
+                });
+            });
+        }
+
+    </script>
+
+</body>
+
+</html>

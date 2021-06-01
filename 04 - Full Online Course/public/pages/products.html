@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Web App: Cloud Image Store</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Goto : https://favicon.io/favicon-generator/ -->
+    <link rel="apple-touch-icon" sizes="180x180" href="../images/favicon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="../images/favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="../images/favicon/favicon-16x16.png">
+
+    <meta name="keywords" content="digital, ecommerce">
+    <meta property="og:description" content="Cloud image storage, most versatile and flexible.">
+    <meta property="og:title" content="Cloud Image">
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+        integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+    <script src="https://www.gstatic.com/firebasejs/8.4.2/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.4.2/firebase-analytics.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.4.2/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.4.2/firebase-firestore.js"></script>
+
+    <script type="text/javascript" src="../js/cloudimage.js"></script>
+    <link rel="stylesheet" type="text/css" href="../css/main_style.css">
+
+    <script src="https://www.google.com/recaptcha/api.js?render=6LdZzrMaAAAAAHNNPjjU142Pr_4fxnv-EVA771R0"></script>
+    <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@sweetalert2/themes@4.0.5/bootstrap-4/bootstrap-4.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10.16.6/dist/sweetalert2.all.min.js"></script>
+
+
+    <script type="text/javascript">
+        function homeClick() { prodList = {}; window.location = '../pages/landing.html'; }
+
+        function scrollFunction() {
+            if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
+                topbutton.classList.add('showtotop');
+            } else {
+                topbutton.classList.remove('showtotop');
+            }
+        }
+
+        function topFunction() {
+            document.body.scrollTop = 0; // For Safari
+            document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera
+        }
+
+        const Toast = Swal.mixin({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3000,
+            // timerProgressBar: true,
+            didOpen: (toast) => {
+                toast.addEventListener('mouseenter', Swal.stopTimer)
+                toast.addEventListener('mouseleave', Swal.resumeTimer)
+            }
+        })
+
+        let PAGE_SIZE = 3;
+        var totalPages = 1;
+        var page = 1;
+        let prodList = []; // global product list
+
+        function checkAuthState() {
+            firebase.auth().onAuthStateChanged(async function (user) {
+                if (user) {
+                    let displayName = user.displayName;
+                    let email = user.email;
+                    let emailVerified = user.emailVerified;
+                    let photoURL = user.photoURL;
+                    let isAnonymous = user.isAnonymous;
+                    let uid = user.uid;
+                    let providerData = user.providerData;
+                    if (photoURL) {
+                        document.getElementById('avatar-img').src = photoURL;  
+                    }  
+                    document.getElementById('global-loader').classList.remove('is-active');
+                    /*
+                    let d1 = {
+                        "key": "-MEZVzKw7QK3MCEiI5MO",
+                        "name": "Product 1 - Chair",
+                        "outerkey": "1",
+                        "pic": "https://firebasestorage.googleapis.com/v0/b/spin-360.appspot.com/o/0PqVmAyWZUcyP57xgaLa24BAmf93%2F1%2F1480666247569314_chair-1_jpg.jpeg?alt=media&token=1bc00960-b202-46ac-a870-489a775f3090",
+                        "resize": [],
+                        "status": "compliant",
+                        "timestamp": "2020-08-12 21:12:00",
+                    };
+                    let d2 = {
+                        "key": "-MEZVzKw7QK3MCEiI5MO",
+                        "name": "Product 2 - Chair",
+                        "outerkey": "2",
+                        "pic": "https://firebasestorage.googleapis.com/v0/b/spin-360.appspot.com/o/0PqVmAyWZUcyP57xgaLa24BAmf93%2F1%2F1480666247569314_chair-1_jpg.jpeg?alt=media&token=1bc00960-b202-46ac-a870-489a775f3090",
+                        "resize": [],
+                        "status": "compliant",
+                        "timestamp": "2020-08-12 21:12:00",
+                    };
+                    let d3 = {
+                        "key": "-MEZVzKw7QK3MCEiI5MO",
+                        "name": "Product 3 - Chair",
+                        "outerkey": "3",
+                        "pic": "https://firebasestorage.googleapis.com/v0/b/spin-360.appspot.com/o/0PqVmAyWZUcyP57xgaLa24BAmf93%2F1%2F1480666247569314_chair-1_jpg.jpeg?alt=media&token=1bc00960-b202-46ac-a870-489a775f3090",
+                        "resize": [],
+                        "status": "compliant",
+                        "timestamp": "2020-08-12 21:12:00",
+                    };
+                    prodList.push(d1);
+                    prodList.push(d2);
+                    prodList.push(d3);
+                    */
+                    firebase.auth().currentUser.getIdToken(/* forceRefresh */ true).then(async function (idToken) {
+                        document.getElementById('global-loader').classList.add('is-active');
+                        fetch(
+                            calls.getPrd
+                            , {
+                                // ('/create-customer', {
+                                method: 'post',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'authorization': 'Bearer ' + idToken
+                                },
+                                body: JSON.stringify({
+                                    guid: uid
+                                }),
+                            })
+                            .then((response) => {
+                                return response.json();
+                            })
+                            .then((results) => {
+                                document.getElementById('global-loader').classList.remove('is-active');
+                                // console.log(results);
+                                // console.log('Final Products ->');
+                                // console.log(JSON.stringify(results));
+                                prodList = results.product;
+                                if (prodList.length === 0) {
+                                    Swal.fire({
+                                        title: 'No products found',
+                                        html: `You have not created any products or models yet. Visit Add Products.`,
+                                        icon: "error",
+                                        confirmButtonText: "Ok",
+                                        confirmButtonColor: '#720fa3',
+                                        preConfirm: () => {
+                                            return window.location = '../pages/landing.html';
+                                        }
+                                    }).then((result) => {
+                                    });
+                                }
+                                else {
+                                    const container = document.getElementById('products-display');
+                                    let showPage = PAGE_SIZE;
+                                    page = 1;
+                                    if(prodList.length > page * PAGE_SIZE)
+                                        totalPages = 1 + Math.floor(prodList.length / PAGE_SIZE);                                    
+                                    console.log(`Page = ${page} and Total Page = ${totalPages}`);
+                                    if (prodList.length > 0) {
+                                        if (prodList.length > PAGE_SIZE) {
+                                            document.querySelector('#next').classList.remove('hidden');
+                                            document.querySelector('#next').classList.add('login-social-icon-btn');
+                                        }
+                                        else {
+                                            showPage = prodList.length;
+                                        }
+                                    }
+                                    document.getElementById('headertot').innerHTML = `Total Products: ${prodList.length} | Page ${page}`;
+
+                                    for (let idx = 0; idx < showPage; idx++) {
+                                        let result = prodList[idx];
+                                        // results.product.forEach((result, idx) => {
+                                        // console.log(`================START FOR [${idx}] ===================`);
+                                        let card = document.createElement('div');
+                                        let str = result.pic;
+                                        let amt = 1; //result.pic.length; in case of an array
+                                        let parentkey = result.outerkey;
+                                        let chldkey = result.key.substr(1);
+                                        let content;
+                                        if (result.status === 'compliant') {
+                                            // If we use object-fit: cover; the image keeps its aspect ratio and fills the given dimension. The image will be clipped to fit:
+                                            content = `<div class="login-wrapper" 
+                                        style="padding-left: 15px; padding-right: 15px; padding-top: 20px; padding-bottom: 20px;">
+                                                    <div class="login100-form">
+                                                        <div class="product-card">
+                                                              <a class="login-social-icon-btn" id="prev" style="margin: auto;margin-bottom: 20px;">
+                                                                 <i class="fa" style="color:#e01198;">${idx + 1}</i>
+                                                               </a>
+                                                               <img src="${str}" style="width: 300px; height: 300px; margin: auto; display: table; object-fit: cover">
+                                                               <div class="text-center p-t-10 p-b-10" style="background-color: gainsboro; padding-top: 10px; padding-bottom: 10px;">
+                                                                    <button id="product-down-bttn-${idx}" onclick="downLinksProduct(${idx},${amt})" style="margin-left: 20px;">
+                                                                        <i class="fa fa-cloud-download" style="color:#720fa3;font-size: 20px"></i> 
+                                                                    </button>
+                                                                    <button id="product-info-bttn-${idx}" onclick="downLinksProduct(${idx},${amt})" style="margin-left: 20px;">
+                                                                        <i class="fa fa-cogs" style="color:#3b5998;font-size: 20px"></i> 
+                                                                    </button>
+                                                                </div>                                                                                                                                                               
+                                                               <div class="text-center text-gray-900 p-t-10 p-b-10">
+                                                                    <span class="text-red-700">
+                                                                        ${result.name}
+                                                                    </span>
+                                                                    <button id="product-info-bttn-${idx}" onclick="showProductInfo(${idx},${amt})" style="margin-left: 20px; margin-top: 10px;">
+                                                                        <i class="fa fa-info-circle" style="color:#949494;font-size: 15px"></i> 
+                                                                    </button>
+                                                                    <button id="product-del-bttn-${idx}" onclick="deleteProduct(${idx},${amt})" style="margin-left: 20px; margin-top: 10px;">
+                                                                        <i class="fa fa-trash" style="color:#949494;font-size: 15px"></i> 
+                                                                    </button>
+                                                               </div>
+                                                        </div>
+                                                    </div>
+                                                 </div>`;
+
+                                        }
+                                        else {
+                                            // it is deleted
+                                            str = '../images/deleted/del_picture.jpg';
+                                            content = `<div class="login-wrapper" 
+                                        style="padding-left: 15px; padding-right: 15px; padding-top: 20px; padding-bottom: 20px;">
+                                                    <div class="login100-form">
+                                                        <div class="product-card">
+                                                              <a class="login-social-icon-btn" id="prev" style="margin: auto;margin-bottom: 20px;">
+                                                                 <i class="fa" style="color:#e01198;">${idx + 1}</i>
+                                                               </a>
+                                                               <img src="${str}" style="width: 300px; height: 300px; margin: auto; display: table; object-fit: cover">
+                                                               <div class="text-center p-t-10 p-b-10" style="background-color: gainsboro; padding-top: 10px; padding-bottom: 10px;">
+                                                                    <button id="product-down-bttn-${idx}" onclick="downLinksProduct(${idx},${amt})" style="margin-left: 20px;">
+                                                                        <i class="fa fa-cloud-download" style="color:#720fa3;font-size: 20px"></i> 
+                                                                    </button>
+                                                                    <button id="product-info-bttn-${idx}" onclick="downLinksProduct(${idx},${amt})" style="margin-left: 20px;">
+                                                                        <i class="fa fa-cogs" style="color:#3b5998;font-size: 20px"></i> 
+                                                                    </button>
+                                                                </div>                                                                                                                                                               
+                                                               <div class="text-center text-gray-900 p-t-10 p-b-10">
+                                                                    <span class="text-red-700">
+                                                                        ${result.name}
+                                                                    </span>
+                                                                    <button id="product-info-bttn-${idx}" onclick="showProductInfo(${idx},${amt})" style="margin-left: 20px; margin-top: 10px;">
+                                                                        <i class="fa fa-info-circle" style="color:#949494;font-size: 15px"></i> 
+                                                                    </button>
+                                                                    <button id="product-del-bttn-${idx}" onclick="deleteProduct(${idx},${amt})" style="margin-left: 20px; margin-top: 10px;">
+                                                                        <i class="fa fa-trash" style="color:#949494;font-size: 15px"></i> 
+                                                                    </button>
+                                                               </div>
+                                                        </div>
+                                                    </div>
+                                                 </div>`;
+                                        }
+                                        card.innerHTML = content;
+                                        container.appendChild(card);
+                                        container.style = `background-image: url('../images/background/bg-03.jpeg');`;
+                                    } //end for
+                                } // end else
+                            }).catch(error => {
+                                // console.log(JSON.stringify(error));
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Oops...', text: 'Something went wrong!',
+                                    footer: '<a href="../pages/help.html" > Why do I have this issue?</a>'
+                                });
+                            });
+                    });
+                }// end if
+            });
+        }
+
+        function prevProduct() {
+            const containerOld = document.getElementById('products-display');
+            containerOld.remove();
+            // const container = document.getElementById('products-display');
+            const container = document.createElement('div');
+            container.setAttribute("id", "products-display");
+            container.setAttribute("class", "container-product100");
+            container.style.backgroundImage = "url('../images/bg-03.jpg')";
+            //class="container-product100" style="background-image: url('../images/bg-03.jpg'); "
+            let start;
+            let end = page * PAGE_SIZE;
+            if (end > prodList.length)
+                end = prodList.length;
+            if (page === 1) {
+                //start of page
+                start = 0;
+                // document.querySelector('#next').classList.remove('hidden');
+                // //login-social-icon-btn
+                // document.querySelector('#next').classList.add('login-social-icon-btn');
+
+                // document.querySelector('#prev').classList.remove('login-social-icon-btn');
+                // document.querySelector('#prev').classList.add('hidden');
+                Toast.fire({
+                    icon: 'info',
+                    title: 'Start of Product List!'
+                });
+            } else {
+                start = (page - 1) * PAGE_SIZE;
+                page--;
+            }
+            document.getElementById('headertot').innerHTML = `Total Products: ${prodList.length} | Page ${page}`;
+            console.log(`NEXT start = ${start} end = ${end} page = ${page}`);
+            for (let idx = start; idx < end; idx++) {
+                let result = prodList[idx];
+                let card = document.createElement('div');
+                let str = result.pic;
+                let amt = 1; //result.pic.length;
+                let parentkey = result.outerkey;
+                let chldkey = result.key.substr(1);
+                let gid = firebase.auth().currentUser.uid;
+                let content;
+                if (result.status === 'compliant') {
+                    content = `<div class="login-wrapper" 
+                                        style="padding-left: 15px; padding-right: 15px; padding-top: 20px; padding-bottom: 20px;">
+                                                    <div class="login100-form">
+                                                        <div class="product-card">
+                                                              <a class="login-social-icon-btn" id="prev" style="margin: auto;margin-bottom: 20px;">
+                                                                 <i class="fa" style="color:#e01198;">${idx + 1}</i>
+                                                               </a>
+                                                               <img src="${str}" style="width: 300px; height: 300px; margin: auto; display: table; object-fit: cover">
+                                                               <div class="text-center p-t-10 p-b-10" style="background-color: gainsboro; padding-top: 10px; padding-bottom: 10px;">
+                                                                    <button id="product-down-bttn-${idx}" onclick="downLinksProduct(${idx},${amt})" style="margin-left: 20px;">
+                                                                        <i class="fa fa-cloud-download" style="color:#720fa3;font-size: 20px"></i> 
+                                                                    </button>
+                                                                    <button id="product-info-bttn-${idx}" onclick="downLinksProduct(${idx},${amt})" style="margin-left: 20px;">
+                                                                        <i class="fa fa-cogs" style="color:#3b5998;font-size: 20px"></i> 
+                                                                    </button>
+                                                                </div>                                                                                                                                                               
+                                                               <div class="text-center text-gray-900 p-t-10 p-b-10">
+                                                                    <span class="text-red-700">
+                                                                        ${result.name}
+                                                                    </span>
+                                                                    <button id="product-info-bttn-${idx}" onclick="showProductInfo(${idx},${amt})" style="margin-left: 20px; margin-top: 10px;">
+                                                                        <i class="fa fa-info-circle" style="color:#949494;font-size: 15px"></i> 
+                                                                    </button>
+                                                                    <button id="product-del-bttn-${idx}" onclick="deleteProduct(${idx},${amt})" style="margin-left: 20px; margin-top: 10px;">
+                                                                        <i class="fa fa-trash" style="color:#949494;font-size: 15px"></i> 
+                                                                    </button>
+                                                               </div>
+                                                        </div>
+                                                    </div>
+                                                 </div>`;
+
+                }
+                else {
+                    // it is deleted
+                    str = '../images/deleted/del_picture.jpg';
+                    content = `<div class="login-wrapper" 
+                                        style="padding-left: 15px; padding-right: 15px; padding-top: 20px; padding-bottom: 20px;">
+                                                    <div class="login100-form">
+                                                        <div class="product-card">
+                                                              <a class="login-social-icon-btn" id="prev" style="margin: auto;margin-bottom: 20px;">
+                                                                 <i class="fa" style="color:#e01198;">${idx + 1}</i>
+                                                               </a>
+                                                               <img src="${str}" style="width: 300px; height: 300px; margin: auto; display: table; object-fit: cover">
+                                                               <div class="text-center p-t-10 p-b-10" style="background-color: gainsboro; padding-top: 10px; padding-bottom: 10px;">
+                                                                    <button id="product-down-bttn-${idx}" onclick="downLinksProduct(${idx},${amt})" style="margin-left: 20px;">
+                                                                        <i class="fa fa-cloud-download" style="color:#720fa3;font-size: 20px"></i> 
+                                                                    </button>
+                                                                    <button id="product-info-bttn-${idx}" onclick="downLinksProduct(${idx},${amt})" style="margin-left: 20px;">
+                                                                        <i class="fa fa-cogs" style="color:#3b5998;font-size: 20px"></i> 
+                                                                    </button>
+                                                                </div>                                                                                                                                                               
+                                                               <div class="text-center text-gray-900 p-t-10 p-b-10">
+                                                                    <span class="text-red-700">
+                                                                        ${result.name}
+                                                                    </span>
+                                                                    <button id="product-info-bttn-${idx}" onclick="showProductInfo(${idx},${amt})" style="margin-left: 20px; margin-top: 10px;">
+                                                                        <i class="fa fa-info-circle" style="color:#949494;font-size: 15px"></i> 
+                                                                    </button>
+                                                                    <button id="product-del-bttn-${idx}" onclick="deleteProduct(${idx},${amt})" style="margin-left: 20px; margin-top: 10px;">
+                                                                        <i class="fa fa-trash" style="color:#949494;font-size: 15px"></i> 
+                                                                    </button>
+                                                               </div>
+                                                        </div>
+                                                    </div>
+                                                 </div>`;
+                }
+                card.innerHTML = content;
+                container.appendChild(card);
+                container.style = `background-image: url('../images/background/bg-03.jpeg');`;
+            }
+            document.body.appendChild(container);
+        }
+
+        function nextProduct() {
+            const containerOld = document.getElementById('products-display');
+            containerOld.remove();
+            // const container = document.getElementById('products-display');
+            const container = document.createElement('div');
+            container.setAttribute("id", "products-display");
+            container.setAttribute("class", "container-product100");
+            container.style.backgroundImage = "url('../images/bg-03.jpg')";
+            //class="container-product100" style="background-image: url('../images/bg-03.jpg'); "          
+            let start = page * PAGE_SIZE;
+            let end;
+            if (start > prodList.length) {
+                if (page === 1 && totalPages === 1) {
+                    start = 0;
+                    end = prodList.length;
+                }
+            }
+            // document.querySelector('#prev').classList.remove('hidden');
+            // document.querySelector('#prev').classList.add('login-social-icon-btn');
+            end = 0;
+            if (((page + 1) * PAGE_SIZE) < prodList.length) {
+                let rem = prodList.length - ((page + 1) * PAGE_SIZE);
+                if (rem > 0) {
+                    end = start + PAGE_SIZE;
+                    page++;
+                    document.getElementById('headertot').innerHTML = `Total Products: ${prodList.length} | Page ${page}`;
+                }
+                else {
+                    end = prodList.length;
+                    // document.querySelector('#next').classList.add('hidden');
+                    // document.querySelector('#next').classList.remove('login-social-icon-btn');
+                    Toast.fire({
+                        icon: 'info',
+                        title: 'End of Product List!'
+                    });
+                    document.getElementById('headertot').innerHTML = `Total Products: ${prodList.length} | Page ${page + 1}`;
+                }
+            }
+            else {
+                //reached end
+                end = prodList.length;
+                // document.querySelector('#next').classList.add('hidden');
+                // document.querySelector('#next').classList.remove('login-social-icon-btn');
+                Toast.fire({
+                    icon: 'info',
+                    title: 'End of Product List!'
+                });
+                page++;
+                document.getElementById('headertot').innerHTML = `Total Products: ${prodList.length} | Page ${page}`;
+            }
+            console.log(`NEXT start = ${start} end = ${end} page = ${page}`);
+            for (let idx = start; idx < end; idx++) {
+                let result = prodList[idx];
+                let card = document.createElement('div');
+                let str = result.pic;
+                // console.log('result.pic = ' + result.pic);
+                let amt = 1; //result.pic.length;
+                let parentkey = result.outerkey;
+                let chldkey = result.key.substr(1);
+                let gid = firebase.auth().currentUser.uid;
+                let content;
+                if (result.status === 'compliant') {
+                    content = `<div class="login-wrapper" 
+                                        style="padding-left: 15px; padding-right: 15px; padding-top: 20px; padding-bottom: 20px;">
+                                                    <div class="login100-form">
+                                                        <div class="product-card">
+                                                              <a class="login-social-icon-btn" id="prev" style="margin: auto;margin-bottom: 20px;">
+                                                                 <i class="fa" style="color:#e01198;">${idx + 1}</i>
+                                                               </a>
+                                                               <img src="${str}" style="width: 300px; height: 300px; margin: auto; display: table; object-fit: cover">
+                                                               <div class="text-center p-t-10 p-b-10" style="background-color: gainsboro; padding-top: 10px; padding-bottom: 10px;">
+                                                                    <button id="product-down-bttn-${idx}" onclick="downLinksProduct(${idx},${amt})" style="margin-left: 20px;">
+                                                                        <i class="fa fa-cloud-download" style="color:#720fa3;font-size: 20px"></i> 
+                                                                    </button>
+                                                                    <button id="product-info-bttn-${idx}" onclick="downLinksProduct(${idx},${amt})" style="margin-left: 20px;">
+                                                                        <i class="fa fa-cogs" style="color:#3b5998;font-size: 20px"></i> 
+                                                                    </button>
+                                                                </div>                                                                                                                                                               
+                                                               <div class="text-center text-gray-900 p-t-10 p-b-10">
+                                                                    <span class="text-red-700">
+                                                                        ${result.name}
+                                                                    </span>
+                                                                    <button id="product-info-bttn-${idx}" onclick="showProductInfo(${idx},${amt})" style="margin-left: 20px; margin-top: 10px;">
+                                                                        <i class="fa fa-info-circle" style="color:#949494;font-size: 15px"></i> 
+                                                                    </button>
+                                                                    <button id="product-del-bttn-${idx}" onclick="deleteProduct(${idx},${amt})" style="margin-left: 20px; margin-top: 10px;">
+                                                                        <i class="fa fa-trash" style="color:#949494;font-size: 15px"></i> 
+                                                                    </button>
+                                                               </div>
+                                                        </div>
+                                                    </div>
+                                                 </div>`;
+
+                }
+                else {
+                    // it is deleted
+                    str = '../images/deleted/del_picture.jpg';
+                    content = `<div class="login-wrapper" 
+                                        style="padding-left: 15px; padding-right: 15px; padding-top: 20px; padding-bottom: 20px;">
+                                                    <div class="login100-form">
+                                                        <div class="product-card">
+                                                              <a class="login-social-icon-btn" id="prev" style="margin: auto;margin-bottom: 20px;">
+                                                                 <i class="fa" style="color:#e01198;">${idx + 1}</i>
+                                                               </a>
+                                                               <img src="${str}" style="width: 300px; height: 300px; margin: auto; display: table; object-fit: cover">
+                                                               <div class="text-center p-t-10 p-b-10" style="background-color: gainsboro; padding-top: 10px; padding-bottom: 10px;">
+                                                                    <button id="product-down-bttn-${idx}" onclick="downLinksProduct(${idx},${amt})" style="margin-left: 20px;">
+                                                                        <i class="fa fa-cloud-download" style="color:#720fa3;font-size: 20px"></i> 
+                                                                    </button>
+                                                                    <button id="product-info-bttn-${idx}" onclick="downLinksProduct(${idx},${amt})" style="margin-left: 20px;">
+                                                                        <i class="fa fa-cogs" style="color:#3b5998;font-size: 20px"></i> 
+                                                                    </button>
+                                                                </div>                                                                                                                                                               
+                                                               <div class="text-center text-gray-900 p-t-10 p-b-10">
+                                                                    <span class="text-red-700">
+                                                                        ${result.name}
+                                                                    </span>
+                                                                    <button id="product-info-bttn-${idx}" onclick="showProductInfo(${idx},${amt})" style="margin-left: 20px; margin-top: 10px;">
+                                                                        <i class="fa fa-info-circle" style="color:#949494;font-size: 15px"></i> 
+                                                                    </button>
+                                                                    <button id="product-del-bttn-${idx}" onclick="deleteProduct(${idx},${amt})" style="margin-left: 20px; margin-top: 10px;">
+                                                                        <i class="fa fa-trash" style="color:#949494;font-size: 15px"></i> 
+                                                                    </button>
+                                                               </div>
+                                                        </div>
+                                                    </div>
+                                                 </div>`;
+                }
+                card.innerHTML = content;
+                container.appendChild(card);
+                container.style = `background-image: url('../images/background/bg-03.jpeg');`;
+            }
+            document.body.appendChild(container);
+        }
+
+        function downLinksProduct(idx, amt) {
+            // console.log('product id passed to showProduct = ' + idx);
+            // console.log('amt passed = ' + amt);
+            // let gid = firebase.auth().currentUser.uid;
+            let prodName = prodList[idx].name.replace(/\.[^/.]+$/, '').trim().replace(/\s+/g, '');
+            let htmlStr = `Here are your cloud urls. Download the files from the links.<Br><Br><p>`;
+            //<li style="{content: "•"; color: red; display: inline - block; width: 1em;margin - left: -1em; font-size:13px;}">
+            htmlStr += `<a href=${prodList[idx].pic} target="_blank">${prodName}-${1}</a> , `;
+            htmlStr += `</p>`;
+            if (prodList[idx].status === 'compliant') {
+                Swal.fire({
+                    title: 'Product Files',
+                    html: htmlStr,
+                    input: 'text',
+                    inputAttributes: { autocapitalize: 'off' },
+                    showCancelButton: true,
+                    confirmButtonText: 'Send Email',
+                    confirmButtonColor: '#720fa3',
+                    showLoaderOnConfirm: true,
+                    preConfirm: (emailid) => {
+                        // console.log('emailid value =' + emailid);
+                        let userEmail = emailid;
+                        let userEmailFormate = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+                        if (userEmail.match(userEmailFormate)) {
+                            return firebase.auth().currentUser.getIdToken(/* forceRefresh */ true).then(async function (idToken) {
+                                return fetch(
+                                    calls.sndPicEml
+                                    , {
+                                        method: 'post',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                            'authorization': 'Bearer ' + idToken
+                                        },
+                                        body: JSON.stringify({
+                                            'email': emailid,
+                                            'prodName': prodList[idx].name,
+                                            'user': firebase.auth().currentUser.displayName,
+                                            'pic': prodList[idx].pic,
+                                            'guid': firebase.auth().currentUser.uid
+                                        }),
+                                    })
+                                    .then(response => {
+                                        if (!response.ok) {
+                                            throw new Error(response.statusText)
+                                        }
+                                        return response.json()
+                                    })
+                                    .catch(error => {
+                                        Swal.showValidationMessage(`Request failed: ${error}`)
+                                    });
+                            });
+                        }
+                        else {
+                            Swal.showValidationMessage(
+                                `Email not valid. Re-enter valid email id !`
+                            )
+                        }
+                    },
+                    allowOutsideClick: () => !Swal.isLoading()
+                }).then((result) => {
+                    if (result.value) {
+                        Swal.fire({
+                            icon: 'info',
+                            backdrop: true,
+                            title: `Email Sent`,
+                            showCancelButton: false,
+                            confirmButtonColor: '#720fa3',
+                        });
+                    }
+                });
+            }
+            else {
+                Swal.fire({
+                    title: 'Product was deleted or non_compliant!',
+                    html: 'Your Product has been deleted or it has been found to be non compliant with our strict image policy of no adult, violence, spoof and racial abusive images',
+                    icon: "info",
+                    confirmButtonText: "Ok",
+                    confirmButtonColor: '#720fa3',
+                    preConfirm: () => {
+                        // return window.location = '../pages/landing.html'; //if you stay on the page it is going to mess the form and variables
+                    }
+                }).then((result) => {
+                });
+            }
+        }
+
+        function showProductInfo(idx, amt) {
+            let htmlStr = `<table style="border-collapse: collapse; border: none;">
+                                <tr style="border: none;">
+                                    <td style="border: none; text-align: left; padding-top: 20px;">
+                                    <b>name:</b>&nbsp;&nbsp;&nbsp;${prodList[idx].name}
+                                    </td>
+                                </tr>
+                                <tr style="border: none;">
+                                    <td style="border: none; text-align: left; padding-top: 20px;">
+                                    <b>Status:</b>&nbsp;&nbsp;&nbsp;${prodList[idx].status.toUpperCase()}
+                                    </td>
+                                </tr>
+                                <tr style="border: none;">
+                                    <td style="border: none; text-align: left; padding-top: 20px;">
+                                    <b>Created:</b>&nbsp;&nbsp;&nbsp;${prodList[idx].timestamp}
+                                    </td>
+                                </tr>
+                                <tr style="border: none;">
+                                    <td style="border: none; text-align: left; padding-top: 20px;">
+                                    <b>No. Images:</b>&nbsp;&nbsp;&nbsp;${1}
+                                    </td>
+                                </tr>
+                            </table>`;
+            Swal.fire({
+                title: `Product: ${prodList[idx].name}`,
+                html: htmlStr,
+                icon: "info",
+                confirmButtonText: "Ok",
+                confirmButtonColor: '#720fa3',
+                preConfirm: () => {
+                    // do nothing
+                }
+            }).then((result) => {
+            });
+        }
+
+        function deleteProduct(idx, amt) {
+            // console.log('product id passed = ' + idx);
+            // console.log('amt passed = ' + amt);
+
+            let key = prodList[idx].key;
+            // console.log('key passed = ' + key);
+
+            Swal.fire({
+                title: 'Delete Product - Are you sure?',
+                text: "You won't be able to revert this! You will loose the product images & hostings.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                confirmButtonColor: '#79767a',
+                cancelButtonColor: '#720fa3',
+                confirmButtonText: 'Yes, Delete Product!'
+            }).then((result) => {
+                if (result.value) {
+                    document.getElementById('global-loader').classList.add('is-active');
+                    firebase.auth().currentUser.getIdToken(/* forceRefresh */ true).then(async function (idToken) {
+                        return fetch(
+                            calls.delPrd
+                            , {
+                                method: 'post',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'authorization': 'Bearer ' + idToken
+                                },
+                                body: JSON.stringify({
+                                    prodId: idx,
+                                    prodKey: key,
+                                    guid: firebase.auth().currentUser.uid,
+                                }),
+                            })
+                            .then((response) => {
+                                return response.json();
+                            })
+                            .then((deleteProdResponse) => {
+                                document.getElementById('global-loader').classList.remove('is-active');
+                                Swal.fire({
+                                    title: 'Deleted!',
+                                    html: 'Your Product has been deleted. We have emailed you the confirmation.<br><br> Go back to Home Page to refresh the latest status',
+                                    icon: "info",
+                                    confirmButtonText: "Ok",
+                                    confirmButtonColor: '#720fa3',
+                                    preConfirm: () => {
+                                        return window.location = '../pages/landing.html'; //if you stay on the page it is going to mess the form and variables
+                                    }
+                                }).then((result) => {
+                                });
+                            }).catch(e => {
+                                document.getElementById('global-loader').classList.remove('is-active');
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Product Deletion Failed!',
+                                    text: 'No Product Found in the System or it is already deleted',
+                                    confirmButtonText: "Ok",
+                                    confirmButtonColor: '#720fa3',
+                                }).then((result) => {
+                                });
+                            });
+                    });
+                }
+            });
+
+        }
+
+        function initApp() {
+            firebase.initializeApp(firebaseConfig);
+            firebase.analytics();
+
+            document.getElementById('go-home').addEventListener('click', homeClick, false);
+            document.getElementById('global-loader').classList.add('is-active');
+
+            document.getElementById('prev').addEventListener('click', prevProduct, false);
+            document.getElementById('next').addEventListener('click', nextProduct, false);
+        }
+
+        let topbutton;
+
+        window.onload = function () {
+            initApp();
+            checkAuthState();
+            topbutton = document.getElementById("button-float");
+            topbutton.addEventListener('click', topFunction, false);
+            // When the user scrolls down 20px from the top of the document, show the button
+            window.onscroll = function () { scrollFunction() };
+        }
+
+    </script>
+
+</head>
+
+<body>
+    <a class="buttonfloat" id="button-float"></a>
+    <div id="global-loader" class="loader loader-default"></div>
+    <div>
+        <div class="landing-action-btn" style="padding-bottom: 30px; padding-top: 30px;">
+            <button class="avatar-btn" id="go-home">
+                <img src="../images/icons/avatar.png" class="avatar" id="avatar-img">Home
+            </button>
+        </div>
+    </div>
+    <div class="view-product-help-banner" style="padding-top: 10px; padding-bottom: 10px;" id="navparent">
+        <a href="#" class="login-social-icon-btn" id="prev">
+            <i class="fa  fa-chevron-circle-left" style="color:#e01198;"></i>
+        </a>
+        <a href="#" class="login-social-icon-btn" id="next" style="margin-left: 50px;">
+            <i class="fa  fa-chevron-circle-right" style="color:#e01198;"></i>
+        </a>
+        <div style="margin-top: 20px;margin-left: 0px; display: table;">
+            <span class="txt2" style="margin-left: 50px;" id="headertot"></span>
+        </div>
+    </div>
+    <div class="view-product-help-banner"
+        style="padding-left: 10px; padding-right: 10px; padding-top: 10px; padding-bottom: 30px;">
+        <div class="text-center"
+            style="display: flex; background-color: gainsboro; padding-top: 10px; padding-bottom: 10px;">
+            <button style="margin-left: 20px;">
+                <i class="fa fa-trash" style="color:#000000;font-size: 20px"></i>
+                <span style="font-size: 0.7rem;">Delete Product</span>
+            </button>
+            <button style="margin-left: 20px;">
+                <i class="fa fa-cloud-download" style="color:#3b5998;font-size: 20px"></i>
+                <span style="font-size: 0.7rem;">Download Image</span>
+            </button>
+            <button style="margin-left: 20px; margin-right:20px;">
+                <i class="fa fa-cogs" style="color:#720fa3;font-size: 20px"></i>
+                <span style="font-size: 0.7rem;">Image Info</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- <div id="products-display" class="container-product100" style="background-image: url('../images/bg-03.jpg'); "> -->
+    <div id="products-display" class="container-product100">
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+        integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+        crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+        integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+        crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+        integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+        crossorigin="anonymous"></script>
+
+</body>
+
+</html>

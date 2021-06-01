@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Firebase File Upload</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+</head>
+
+<body>
+  <div>
+    Upload Files<br />
+    <input type="file" id="files" multiple /><br /><br />
+    <button id="upldBtn">Upload</button>
+    <p id="uploading"></p>
+    <progress value="0" max="100" id="prgBar"></progress>
+  </div>
+
+  <!-- The core Firebase JS SDK is always required and must be listed first -->
+  <script src="https://www.gstatic.com/firebasejs/7.13.1/firebase-app.js"></script>
+
+  <!-- TODO: Add SDKs for Firebase products that you want to use -->
+  <script src="https://www.gstatic.com/firebasejs/7.13.1/firebase-storage.js"></script>
+
+  <script>
+    // Your web app's Firebase configuration
+    var firebaseConfig = {
+      apiKey: "AIzaSyCd_rU4ft1CCdYZJCAjM8OyAVVfZ8I14LQ",
+      authDomain: "file-upload-deae7.firebaseapp.com",
+      databaseURL: "https://file-upload-deae7.firebaseio.com",
+      projectId: "file-upload-deae7",
+      storageBucket: "file-upload-deae7.appspot.com",
+      messagingSenderId: "772980880174",
+      appId: "1:772980880174:web:273969e0f628410853c0bf"
+    };
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+  </script>
+
+  <script>
+    var files = [];
+    document.getElementById("files").addEventListener("change", function (e) {
+      files = e.target.files;
+      for (let i = 0; i < files.length; i++) {
+        console.log(files[i]);
+      }
+    });
+
+    document.getElementById("upldBtn").addEventListener("click", function () {
+      //checks if files are selected
+      if (files.length != 0) {
+        //Loops through all the selected files
+        for (let i = 0; i < files.length; i++) {
+          //create a storage reference
+          var storage = firebase.storage().ref(files[i].name);
+
+          //upload file
+          var upload = storage.put(files[i]);
+
+          //update progress bar
+          upload.on(
+            "state_changed",
+            function progress(snapshot) {
+              var percentage =
+                (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+              document.getElementById("prgBar").value = percentage;
+            },
+
+            function error() {
+              alert("error uploading file");
+            },
+
+            function complete() {
+              document.getElementById(
+                "uploading"
+              ).innerHTML += `${files[i].name} upoaded <br />`;
+            }
+          );
+
+          uploadTask.then(function (snapshot) {
+             return new Promise((r, j) => { 
+                resolve(snapshot.ref.getDownloadURL()) 
+              }); 
+            });
+        }
+      } else {
+        alert("No file chosen");
+      }
+    });
+
+    function getFileUrl(filename) {
+      //create a storage reference
+      var storage = firebase.storage().ref(filename);
+
+      //get file url
+      storage
+        .getDownloadURL()
+        .then(function (url) {
+          console.log(url);
+        })
+        .catch(function (error) {
+          console.log("error encountered");
+        });
+    }
+
+
+    // Simple single file upload
+    const ref = firebase.storage().ref();
+    const file = document.querySelector('#photo').files[0]
+    const name = (+new Date()) + '-' + file.name;
+    const metadata = {
+      contentType: file.type
+    };
+    const task = ref.child(name).put(file, metadata);
+    task
+      .then(snapshot => snapshot.ref.getDownloadURL())
+      .then((url) => {
+        console.log(url);
+        document.querySelector('#someImageTagID').src = url;
+      })
+      .catch(console.error);
+
+
+      // Multiple files upload and save it to Firebase db
+      const uploadBtn = document.querySelector('#post');
+      const fileCollection = [];
+
+    document.querySelector('#pictures').addEventListener('change', (e) => {
+        const formData = extractFormData('#statusForm');
+        while (fileCollection.length) {
+            fileCollection.pop();
+        }
+        [].slice.call(formData.pictures).map(f => fileCollection.push(f));
+        renderCollection(fileCollection, preview);
+    });
+
+  </script>
+</body>
+
+</html>
+

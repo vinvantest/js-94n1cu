@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Web App: Cloud Image Store</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Goto : https://favicon.io/favicon-generator/ -->
+    <link rel="apple-touch-icon" sizes="180x180" href="../images/favicon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="../images/favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="../images/favicon/favicon-16x16.png">
+
+    <meta name="keywords" content="digital, ecommerce">
+    <meta property="og:description" content="Cloud image storage, most versatile and flexible.">
+    <meta property="og:title" content="Cloud Image">
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+        integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+    <script src="https://www.gstatic.com/firebasejs/8.4.2/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.4.2/firebase-analytics.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.4.2/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.4.2/firebase-storage.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.4.2/firebase-database.js"></script>
+
+    <script type="text/javascript" src="../js/cloudimage.js"></script>
+    <link rel="stylesheet" type="text/css" href="../css/main_style.css">
+
+    <script src="https://www.google.com/recaptcha/api.js?render=6LdZzrMaAAAAAHNNPjjU142Pr_4fxnv-EVA771R0"></script>
+    <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@sweetalert2/themes@4.0.5/bootstrap-4/bootstrap-4.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10.16.6/dist/sweetalert2.all.min.js"></script>
+
+
+    <script type="text/javascript">
+        function checkAuthState() {
+            // Listening for auth state changes.
+            firebase.auth().onAuthStateChanged((user) => {
+                if (user) {
+                    // User is signed in.
+                    var displayName = user.displayName;
+                    var email = user.email;
+                    var emailVerified = user.emailVerified;
+                    var photoURL = user.photoURL;
+                    var isAnonymous = user.isAnonymous;
+                    var uid = user.uid;
+                    var providerData = user.providerData;
+                    // console.log("printing User ->");
+                    // console.log(displayName);
+                    // console.log(uid);
+                    // console.log(email);
+                    // console.log(photoURL);
+                    if (photoURL === null || photoURL === undefined || photoURL === "null") {
+                    }
+                    else {
+                        document.getElementById('avatar-img').src = photoURL;
+                    }
+                }
+            });
+            // [END authstatelistener]
+        }
+        function initAppCheck() {
+            // Initialize Firebase
+            firebase.initializeApp(firebaseConfig);
+            firebase.analytics();
+            document.getElementById('go-home').addEventListener('click', homeClick, false);
+        }
+        function homeClick() {
+            window.location = '../pages/landing.html';
+        }
+        window.onload = function () {
+            initAppCheck();
+            checkAuthState();
+        };
+    </script>
+
+</head>
+
+<body>
+
+    <div id="global-loader" class="loader loader-default"></div>
+    <div>
+        <div class="landing-action-btn" style="padding-bottom: 30px; padding-top: 30px;">
+            <button class="avatar-btn" id="go-home">
+                <img src="../images/icons/avatar.png" class="avatar" id="avatar-img">Home
+            </button>
+        </div>
+    </div>
+
+    <div class="container-login100" style="background-image: url('../images/background/bg-03.jpeg');">
+        <div class="login-wrapper"
+            style="padding-left: 55px; padding-right: 55px; padding-top: 80px; padding-bottom: 30px;">
+            <div class="login100-form">
+
+                <div class="logo-image">
+                    <img src="../images/icons/upload-file-icon.png" />
+                </div>
+
+                <div class="logo-image">
+                    <input type="file" id="files" multiple /><br /><br />
+                </div>
+
+                <div class="logo-image">
+                    <button class="login-bottom-txt" id="upldBtn">
+                        Start Uploading
+                    </button>
+                </div>
+                <div class="logo-image">
+                    <progress value="0" max="100" id="prgBar"></progress>
+                    <br>
+                    <p id="uploading"></p>                    
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
+        integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
+        crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+        integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+        crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+        integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+        crossorigin="anonymous"></script>
+
+    <script type="text/javascript">
+        /**
+         * Upload File Logic
+             */
+
+        var files = [];
+        document.getElementById("files").addEventListener("change", function (e) {
+            files = e.target.files;
+            for (let i = 0; i < files.length; i++) {
+                console.log(files[i]);
+            }
+        });
+
+        document.getElementById("upldBtn").addEventListener("click", function () {
+
+            if (firebase.auth().currentUser) {
+                //checks if files are selected
+                if (files.length != 0) {
+                    //Loops through all the selected files
+                    for (let i = 0; i < files.length; i++) {
+                        let productCount = Math.floor(Math.random() * 16 * 100000000);
+                        //create a storage reference
+                        var storage = firebase.storage().ref().child('' + firebase.auth().currentUser.uid + '/' 
+                                        + productCount +'/'+ files[i].name); 
+                        // firebase.storage().ref(files[i].name);
+
+                        //upload file
+                        var upload = storage.put(files[i]);
+
+                        //update progress bar
+                        upload.on(
+                            "state_changed",
+                            function progress(snapshot) {
+                                var percentage =
+                                    (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                                document.getElementById("prgBar").value = percentage;
+                            },
+
+                            function error() {
+                                Swal.fire({
+                                    title: 'Error uploading file to cloud',
+                                    icon: "error",
+                                    confirmButtonText: "Ok",
+                                    confirmButtonColor: '#720fa3',
+                                    preConfirm: () => {
+                                        // return window.location = '../index.html';
+                                    },
+                                }).then((result) => {
+                                });
+                            },
+
+                            function complete() {
+                                document.getElementById(
+                                    "uploading"
+                                ).innerHTML += `${files[i].name} upoaded <br />`;
+                            }
+                        );
+
+                        upload.then(async function (snapshot) {
+                            let url = await snapshot.ref.getDownloadURL();
+                            let fileName = files[i].name.replace(/[^\w\s]/gi, '');
+
+                            await firebase.database().ref('users/' + firebase.auth().currentUser.uid + '/products/')
+                                .child(productCount).push({
+                                    name: fileName,
+                                    status: 'compliant',
+                                    picture: url,
+                                    timestamp: new Date().toISOString().slice(0, 19).replace('T', ' '),
+                                });
+                            await firebase.database().ref('users/' + firebase.auth().currentUser.uid + '/productCount/')
+                                .transaction(function (prodCnt) { return prodCnt + 1; });
+                            await firebase.database().ref('users/' + firebase.auth().currentUser.uid + '/consumption/')
+                                .transaction(function (cmp) { return cmp - 1; });
+
+                            document.getElementById('global-loader').classList.remove('is-active');
+                            Swal.fire({
+                                title: 'Your product has been successfully created',
+                                html: `In background, our AI algorithm will scan images for conformance. 
+                            If images found to be non-compliant then product will be removed automatically.`,
+                                icon: "info",
+                                confirmButtonText: "Ok",
+                                confirmButtonColor: '#720fa3',
+                                preConfirm: () => {
+                                    return window.location = '../pages/landing.html';
+                                }
+                            }).then((result) => {
+                            });
+                        });
+                    }
+                } else {
+                    Swal.fire({
+                        title: 'No file selected for upload to cloud',
+                        icon: "error",
+                        confirmButtonText: "Ok",
+                        confirmButtonColor: '#720fa3',
+                        preConfirm: () => {
+                            // return window.location = '../index.html';
+                        },
+                    }).then((result) => {
+                    });
+                }
+            } else {
+                Swal.fire({
+                    title: 'You not logged in and hence cannot upload to cloud',
+                    icon: "error",
+                    confirmButtonText: "Ok",
+                    confirmButtonColor: '#720fa3',
+                    preConfirm: () => {
+                        return window.location = '../index.html';
+                    },
+                }).then((result) => {
+                });
+            }
+        });
+
+    </script>
+
+</body>
+
+</html>

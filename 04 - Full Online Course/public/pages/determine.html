@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Web App: Cloud Image Store</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Goto : https://favicon.io/favicon-generator/ Note: Folder . and .. heirarchy -->
+    <link rel="apple-touch-icon" sizes="180x180" href="../images/favicon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="../images/favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="../images/favicon/favicon-16x16.png">
+
+    <meta name="keywords" content="digital, ecommerce">
+    <meta property="og:description" content="Cloud image storage, most versatile and flexible.">
+    <meta property="og:title" content="Cloud Image">
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+        integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <!-- <link rel="stylesheet" type="text/css" href="vendor/bootstrap/css/bootstrap.min.css"> -->
+    <!-- <link rel="stylesheet" type="text/css" href="fonts/font-awesome-4.7.0/css/font-awesome.min.css"> -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <!-- <script src="https://use.fontawesome.com/8eb3b2177c.js"></script> -->
+
+    <!-- Insert these scripts at the bottom of the HTML, but before you use any 
+        Firebase services 
+    <script src="https://www.gstatic.com/firebasejs/7.16.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/7.16.0/firebase-analytics.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/7.16.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/7.16.0/firebase-firestore.js"></script>
+    -->
+
+    <script src="https://www.gstatic.com/firebasejs/8.4.2/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.4.2/firebase-analytics.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.4.2/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.4.2/firebase-firestore.js"></script>
+
+    <script type="text/javascript" src="../js/cloudimage.js"></script>
+    <link rel="stylesheet" type="text/css" href="../css/main_style.css">
+    <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@sweetalert2/themes@4.0.5/bootstrap-4/bootstrap-4.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10.16.6/dist/sweetalert2.all.min.js"></script>
+
+    <script type="text/javascript">
+        async function checkAuthState() {
+            firebase.auth().onAuthStateChanged(async function (user) {
+                if (user) {
+                    var displayName = user.displayName;
+                    var email = user.email;
+                    var emailVerified = user.emailVerified;
+                    var photoURL = user.photoURL;
+                    var isAnonymous = user.isAnonymous;
+                    var uid = user.uid;
+                    var providerData = user.providerData;
+                    firebase.auth().currentUser.getIdToken(/* forceRefresh */ true).then(async function (idToken) {
+                        // Check Subscription
+                        fetch(
+                            calls.chkLimit
+                            , {
+                                // ('/create-customer', {
+                                method: 'post',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'authorization': 'Bearer ' + idToken
+                                },
+                                body: JSON.stringify({
+                                    guid: uid
+                                }),
+                            })
+                            .then((response) => {
+                                return response.json();
+                            })
+                            .then((result) => {
+                                console.log(result);
+                                if (result.allowed) {
+                                    window.location.href = '../pages/landing.html';
+                                }
+                                else {
+                                    Swal.fire({
+                                        icon: 'warning',
+                                        title: 'Exceeded Quta Limit for Product / Image Uploads',
+                                        text: 'You have reached the quota allocated to you. Top it up using one time payment or start a subscription!',
+                                        allowOutsideClick: () => !Swal.isLoading(),
+                                        confirmButtonText: "Ok",
+                                        confirmButtonColor: '#720fa3',
+                                        footer: '<a href="../pages/help.html">Why do I have this issue?</a>'
+                                    }).then((result) => {
+                                        window.location = "../pages/payment.html";
+                                    });
+                                }
+                            }).catch(error => {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'No Subscription or charge Found ...',
+                                    text: 'Your subscription is not active or have not charged your account!',
+                                    allowOutsideClick: () => !Swal.isLoading(),
+                                    confirmButtonText: "Ok",
+                                    confirmButtonColor: '#720fa3',
+                                    footer: '<a href="../pages/help.html">Why do I have this issue?</a>'
+                                }).then((result) => {
+                                    window.location = "../pages/payment.html";
+                                });
+                            });
+                    });
+                }
+            });
+        }
+        function initAppCheck() {
+            // Initialize Firebase
+            firebase.initializeApp(firebaseConfig);
+            firebase.analytics();
+        }
+        window.onload = function () {
+            initAppCheck();
+            checkAuthState();
+        };
+
+    </script>
+    <style>
+        .container-determine100 {
+            width: 100%;
+            min-height: 100vh;
+            display: -webkit-box;
+            display: -webkit-flex;
+            display: -moz-box;
+            display: -ms-flexbox;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            padding: 15px;
+            background-repeat: no-repeat;
+            background-size: cover;
+            background-position: center;
+            position: relative;
+            z-index: 1;
+        }
+    </style>
+</head>
+
+<body data-spy="scroll" data-target=".fixed-top">
+    <div>
+        <div class="container-determine100">
+            <img src="../images/icons/animated_loading.gif" width="450px">
+        </div>
+    </div>
+</body>
+
+</html>
