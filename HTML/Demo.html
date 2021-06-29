@@ -23,7 +23,8 @@
         }
 
         p {
-            color: blue;
+            color: blue; 
+            /* In fact, if you use the !important rule, it will override ALL previous styling rules for that specific property on that element! */
         }
 
         .para-class {
@@ -42,6 +43,25 @@
             font-style: italic;
             width: 500px;
         }
+
+           /*
+        Selector 	    Example 	    Example description
+        .class 	        .intro 	        Selects all elements with class="intro"
+        .class1.class2 	.name1.name2 	Selects all elements with both name1 and name2 set within its class attribute
+        .class1 .class2 .name1 .name2 	Selects all elements with name2 that is a descendant of an element with name1
+        #id 	        #firstname 	    Selects the element with id="firstname"
+        * 	            * 	            Selects all elements
+        element 	    p 	            Selects all <p> elements
+        element.class 	p.intro 	    Selects all <p> elements with class="intro"
+        element,element 	div, p 	    Selects all <div> elements and all <p> elements
+        element element 	div p 	    Selects all <p> elements inside <div> elements
+        element>element 	div > p 	Selects all <p> elements where the parent is a <div> element
+        [attribute] 	[target] 	    Selects all elements with a target attribute
+        [attribute=value] 	[target=_blank] 	Selects all elements with target="_blank"
+        :active 	    a:active 	        Selects the active link
+        ::after 	    p::after 	        Insert something after the content of each <p> element
+        ::before 	    p::before 	I       nsert something before the content of each <p> element
+        */
 
         .span-class {
             /* RGB : 0-255 and alpha (opacity) 0-1 */
@@ -87,13 +107,28 @@
             border-style: double;
         }
 
+        /* Flex */
+
+        /* prior to flex 
+        Block, for sections in a webpage
+        Inline, for text
+        Table, for two-dimensional table data
+        Positioned, for explicit position of an element */
+
+        /* This is parent class for flex container to host flex items */
         #parent-class {
             width: 400px;
             height: 100px;
             border: 1px solid black;
             display: flex;            
-            flex-wrap: wrap;
-            /* justify-content: center; */
+            flex-wrap: wrap; /* determine if flex items should wrap or not : nowrap, wrap-reverse*/
+            /* flex-direction: column (stacked flex items in flex container), column-reverse; row, row-reverse*/
+            /* justify-content: center; flex-start (beging of container), flex-end, space-around, space between, justify-content property is used to align the flex items:*/
+            /* align-items: center; flex-start, end, stretch (streches flex items to fill container), baseline (based on font size) */
+            /* align-content: center; used to align flex lines between items */
+            /* To center the flex item use 
+            justify-content: center; (default flex-start) The justify-content property aligns the flexible container's items when the items do not use all available space on the main-axis (horizontally).
+            align-items: center; */
         }
 
         #parent-class div {
@@ -104,24 +139,7 @@
             height: 50px;
         }
 
-        /*
-        Selector 	    Example 	Example description
-        .class 	        .intro 	        Selects all elements with class="intro"
-        .class1.class2 	.name1.name2 	Selects all elements with both name1 and name2 set within its class attribute
-        .class1 .class2 .name1 .name2 	Selects all elements with name2 that is a descendant of an element with name1
-        #id 	        #firstname 	    Selects the element with id="firstname"
-        * 	            * 	            Selects all elements
-        element 	    p 	            Selects all <p> elements
-        element.class 	p.intro 	    Selects all <p> elements with class="intro"
-        element,element 	div, p 	    Selects all <div> elements and all <p> elements
-        element element 	div p 	    Selects all <p> elements inside <div> elements
-        element>element 	div > p 	Selects all <p> elements where the parent is a <div> element
-        [attribute] 	[target] 	    Selects all elements with a target attribute
-        [attribute=value] 	[target=_blank] 	Selects all elements with target="_blank"
-        :active 	    a:active 	        Selects the active link
-        ::after 	    p::after 	        Insert something after the content of each <p> element
-        ::before 	    p::before 	I       nsert something before the content of each <p> element
-        */
+     
     </style>
 </head>
 
@@ -151,13 +169,24 @@
         Class selector
         Inline Styles & Important
         Box – Padding, Margin - Border
+                Content - The content of the box, where text and images appear
+                Padding - Clears an area around the content. The padding is transparent
+                Border - A border that goes around the padding and content
+                Margin - Clears an area outside the border. The margin is transparent
         Flexbox – direction, justify-content, flex-wrap, align-content, align-self
         // Let all the flexible items be the same length, regardless of its content:
 -->
     <h1>My First Page</h1>
     <p>This is a paragraph</p>
-    <img src="https://picsum.photos/200/300" alt="Girl in a jacket" width="300" height="300"
-        style="vertical-align:bottom; object-fit: cover;" />
+    <img src="https://picsum.photos/200/300" alt="This is an image" width="300" height="300"
+        style="vertical-align:bottom; object-fit: cover;" /> 
+        <!-- specify how an <img> or <video> should be resized to fit its container object-fit:
+            fill - This is default. The image is resized to fill the given dimension. If necessary, the image will be stretched or squished to fit
+            contain - The image keeps its aspect ratio, but is resized to fit within the given dimension
+            cover - The image keeps its aspect ratio and fills the given dimension. The image will be clipped to fit
+            none - The image is not resized
+            scale-down - the image is scaled down to the smallest version of none or contain
+        -->
     <p class="para-class" id="small-para">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
         incididunt ut labore et dolore
         magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo
@@ -227,6 +256,71 @@
         <div style="background-color:lightgrey;">E</div>
         <div style="background-color:lightgreen;">F</div>
       </div>
+
+      <!-- Table -->
+      <br><br>
+      <h4>Basic Table Layout</h4>
+      <table style="width:100%">
+        <tr>
+          <th>Name</th>
+          <th>Place</th>
+          <th>Age</th>
+        </tr>
+        <tr>
+          <td>John Doe</td>
+          <td>USA</td>
+          <td>34</td>
+        </tr>
+        <tr>
+          <td>Kim Smith</td>
+          <td>UK</td>
+          <td>64</td>
+        </tr>
+      </table> 
+
+      <!-- Form : form data in request will be /action_page?person=John&place=USA-->
+      <h2>Very basic form to submit user data to server</h2>
+
+        <form action="/action_page" method="get" target="_blank/_self(defaultt/_parent/_top/_framename" name="form_name"> 
+            <!-- If the name attribute is omitted, the value of the input field will not be sent at all. -->
+        <label for="person">Name:</label><br> <!-- for attribute binds the label to the input element. Usually in screen-reader used -->
+        <input type="text" id="person" name="person" value="John" required><br> 
+        <!-- type can be /radio/checkbox/submit/button -->
+            <!-- <form elements>
+                <input>
+                <label>
+                <select>
+                <textarea>
+                <button>
+                <fieldset>
+                <legend>
+                <datalist>
+                <output>
+                <option>
+                <optgroup>
+            </form> -->
+
+        <label for="place">Place:</label><br>
+        <input type="text" id="place" name="place" value="USA" min="10" max="50" readonly><br><br>
+        
+        <!-- radio button input type -->
+        <input type="radio" id="male" name="sex" value="Male" disabled>
+        <label for="male">Male</label><br>
+        <input type="radio" id="female" name="sex" value="Female">
+        <label for="female">CSS</label>
+        <br><br>
+        
+        <!-- checkbox -->
+        <input type="checkbox" id="above18" name="ageAbove" value="Above 18" checked>
+        <label for="above18">Above 18 yeears of Age</label><br>
+        <input type="checkbox" id="under18" name="ageUnder" value="Under 18">
+        <label for="under18">Under 18 yeears of Age</label>
+        <br><br>
+
+        <!-- submit -->
+        <input type="button" onclick="alert('I am a button')" value="button!"> 
+        <input type="submit" value="Submit">
+        </form> 
 
     <script type="text/javascript">
         document.getElementById('small-para').style = 'color: black';
